@@ -46,8 +46,8 @@ let resourceInterval = null;
 
 // Speed tracking for ETA calculation
 const modeSpeeds = {
-    standard: 50, // Default H/s for TronWeb
-    fast: 500     // Default H/s for WASM (Estimated)
+    standard: 100, // TronWeb (JS)
+    fast: 1500     // WASM (Estimated)
 };
 
 /**
@@ -285,8 +285,8 @@ function startGeneration() {
     progressBar.style.width = '0%';
 
     if (worker) worker.terminate();
-    // Worker path is relative to the HTML file (index.html at root)
-    worker = new Worker('src/js/worker.js');
+    // Initialize worker as ES module to support imports inside worker.js
+    worker = new Worker('src/js/worker.js', { type: 'module' });
 
     worker.onmessage = (e) => {
         const { type, data } = e.data;
