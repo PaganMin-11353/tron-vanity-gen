@@ -3,8 +3,6 @@
  * Handles user interactions, validation, and worker management.
  */
 
-const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-
 // DOM Elements
 const prefixInput = document.getElementById('prefix');
 const suffixInput = document.getElementById('suffix');
@@ -12,11 +10,22 @@ const prefixError = document.getElementById('prefix-error');
 const suffixError = document.getElementById('suffix-error');
 const resultLimitInput = document.getElementById('limit');
 const modeStandard = document.getElementById('mode-standard');
+const modeFast = document.getElementById('mode-fast');
+const labelStandard = document.querySelector('label[for="mode-standard"]');
+const labelFast = document.querySelector('label[for="mode-fast"]');
+const switchTron = document.getElementById('switch-tron');
+const switchEth = document.getElementById('switch-eth');
 const btnStart = document.getElementById('btn-start');
 const btnStop = document.getElementById('btn-stop');
 const resultsBody = document.getElementById('results-body');
 const warningBox = document.getElementById('security-warning');
 const closeWarningBtn = document.getElementById('close-warning');
+
+// Network State
+let currentNetwork = 'tron';
+
+const HEX_ALPHABET = '0123456789abcdefABCDEF';
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 // Stats Elements
 const statSpeed = document.getElementById('stat-speed');
@@ -42,26 +51,79 @@ const modeSpeeds = {
 };
 
 /**
- * Validates Base58 character set and TRON-specific constraints.
+ * Validates current terminal network constraints.
  */
 function validateInput(text, isPrefix = false) {
     if (text.length === 0) return { valid: true };
 
-    for (let char of text) {
-        if (!BASE58_ALPHABET.includes(char)) {
-            return { valid: false, error: `Invalid Base58 char: ${char}` };
+    if (currentNetwork === 'eth') {
+        for (let char of text) {
+            if (!HEX_ALPHABET.includes(char)) {
+                return { valid: false, error: `Invalid Hex char: ${char}` };
+            }
         }
-    }
-
-    if (isPrefix) {
-        const secondChar = text[0];
-        if (secondChar >= 'a' && secondChar <= 'z') {
-            return { valid: false, error: "Second char cannot be lowercase [a-z]." };
+    } else {
+        for (let char of text) {
+            if (!BASE58_ALPHABET.includes(char)) {
+                return { valid: false, error: `Invalid Base58 char: ${char}` };
+            }
+        }
+        if (isPrefix) {
+            const secondChar = text[0];
+            if (secondChar >= 'a' && secondChar <= 'z') {
+                return { valid: false, error: "Second char cannot be lowercase [a-z]." };
+            }
         }
     }
 
     return { valid: true };
 }
+
+/**
+ * Handles network switching UI and state.
+ */
+function switchNetwork(network) {
+    if (worker) stopGeneration();
+    
+    currentNetwork = network;
+    document.body.className = network === 'eth' ? 'eth-theme' : 'tron-theme';
+    
+    switchTron.classList.toggle('active', network === 'tron');
+    switchEth.classList.toggle('active', network === 'eth');
+    
+    // Update labels
+    const name = network === 'eth' ? 'Ethereum' : 'TRON';
+    document.getElementById('main-title').textContent = `${name} Vanity Generator`;
+    document.title = `${name} Vanity - Local & Secure`;
+    document.getElementById('meta-desc').setAttribute('content', `Generate ${name} vanity addresses locally in your browser.`);
+    document.getElementById('security-text').textContent = `For maximum security, generate your ${name} vanity address offline by disconnecting from the internet.`;
+    document.getElementById('prefix-label').textContent = `Prefix (Starts with ${network === 'eth' ? '0x' : 'T'})`;
+    
+    document.querySelector('.prefix-fixed').textContent = network === 'eth' ? '0x' : 'T';
+    
+    // Clear inputs and errors
+    prefixInput.value = '';
+    suffixInput.value = '';
+    prefixError.textContent = '';
+    suffixError.textContent = '';
+
+    // Update engine labels
+    if (network === 'eth') {
+        labelStandard.textContent = 'Ethers.js (Stable)';
+        labelFast.style.display = 'none';
+        modeFast.style.display = 'none';
+        modeStandard.checked = true;
+    } else {
+        labelStandard.textContent = 'TronWeb (Stable)';
+        labelFast.style.display = 'block';
+        modeFast.style.display = 'none'; // Keep hidden as per CSS
+    }
+
+    updateLiveETA();
+}
+
+switchTron.addEventListener('click', () => switchNetwork('tron'));
+switchEth.addEventListener('click', () => switchNetwork('eth'));
 
 /**
  * Calculates current probability and updates ETA display.
@@ -114,7 +176,8 @@ function calculateProbability(prefix, suffix) {
         return 1;
     }
 
-    const attempts = Math.pow(58, combinedLength);
+    const base = currentNetwork === 'eth' ? 16 : 58;
+    const attempts = Math.pow(base, combinedLength);
     
     let probText = '';
     if (attempts < 1000) {
@@ -241,7 +304,7 @@ function startGeneration() {
         }
     };
 
-    worker.postMessage({ command: 'start', prefix, suffix, mode });
+    worker.postMessage({ command: 'start', prefix, suffix, mode, network: currentNetwork });
 }
 
 function stopGeneration() {
@@ -277,12 +340,13 @@ function addResult(address, privateKey) {
                              `<span class="highlight">${address.substring(start)}</span>`;
     }
 
-    // Highlight prefix (starts at index 1 because index 0 is always 'T')
+    // Highlight prefix
     if (prefix) {
-        const prefixEnd = 1 + prefix.length;
+        const offset = currentNetwork === 'eth' ? 2 : 1;
+        const prefixEnd = offset + prefix.length;
         const middlePart = highlightedAddress.substring(prefixEnd);
-        highlightedAddress = highlightedAddress.substring(0, 1) + 
-                             `<span class="highlight">${highlightedAddress.substring(1, prefixEnd)}</span>` + 
+        highlightedAddress = highlightedAddress.substring(0, offset) + 
+                             `<span class="highlight">${highlightedAddress.substring(offset, prefixEnd)}</span>` + 
                              middlePart;
     }
 
