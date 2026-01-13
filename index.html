@@ -6,6 +6,7 @@
     <title>TRON Vanity - Local & Secure</title>
     <meta id="meta-desc" name="description" content="Generate TRON vanity addresses locally in your browser.">
     <link rel="stylesheet" href="src/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="favico.svg">
 </head>
 <body class="tron-theme">
     <main class="container">
@@ -45,16 +46,6 @@
                 <label for="limit">Max Results</label>
                 <input type="number" id="limit" value="20" min="1" max="100">
                 <div class="field-info">Search will automatically stop after this many matches.</div>
-            </div>
-
-            <div class="mode-selection">
-                <label>Engine</label>
-                <div class="radio-group">
-                    <input type="radio" id="mode-standard" name="engine" value="standard" checked>
-                    <label for="mode-standard">TronWeb (Stable)</label>
-                    <input type="radio" id="mode-fast" name="engine" value="fast">
-                    <label for="mode-fast">WASM (Fast)</label>
-                </div>
             </div>
 
             <div class="actions">
@@ -126,11 +117,9 @@
     </main>
 
     <footer class="footer">
-        <p>Built by alan.z using <a href="https://github.com/tronweb3/tronweb" target="_blank">TronWeb</a>, <a href="https://github.com/ethers-io/ethers.js" target="_blank">Ethers.js</a>, and <a href="https://github.com/bitauth/libauth" target="_blank">Libauth (WASM)</a></p>
+        <p>Built by alan.z using <a href="https://github.com/tronweb3/tronweb" target="_blank">TronWeb</a> and <a href="https://github.com/ethers-io/ethers.js" target="_blank">Ethers.js</a></p>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
     <script src="src/js/app.js"></script>
 </body>
 </html>
